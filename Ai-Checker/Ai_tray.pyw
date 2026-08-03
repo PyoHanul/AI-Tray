@@ -43,7 +43,7 @@ config = load_config()
 
 active_right_view = "console"
 active_console_id = None
-console_text_widgets, console_scrollbars, console_tab_buttons, main_tab_buttons = {}, {}, {}, {}
+console_text_widgets, console_frames, console_scrollbars, console_tab_buttons, main_tab_buttons = {}, {}, {}, {}, {}
 paned = left_panel = right_panel = frame_right_settings = None
 scroll_left = left_canvas = None
 
@@ -215,6 +215,8 @@ def show_right_view(view_type):  # 우측 메인 패널 화면 교체
             w.pack_forget()
         for sb in console_scrollbars.values():
             sb.pack_forget()
+        for f in console_frames.values():
+            f.pack_forget()
         frame_right_settings.pack(fill="both", expand=True)
     else:
         frame_right_settings.pack_forget()
@@ -232,13 +234,15 @@ def select_console_tab(service_id):  # 우측 콘솔 탭 선택 활성화
 
     frame_right_settings.pack_forget()
     for sid, widget in console_text_widgets.items():
-        sb = console_scrollbars[sid]
+        frame, scrollbar = console_frames[sid], console_scrollbars[sid]
         if sid == service_id:
-            sb.pack(side="right", fill="y", padx=(0, 0), pady=0)
-            widget.pack(side="left", fill="both", expand=True, padx=0, pady=0)
+            frame.pack(fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            widget.pack(side="left", fill="both", expand=True)
         else:
             widget.pack_forget()
-            sb.pack_forget()
+            scrollbar.pack_forget()
+            frame.pack_forget()
 
 def bind_scroll(canvas, axis, targets, drag=True):
     """마우스 휠(+선택적 드래그) 스크롤을 canvas에 바인딩하는 공용 헬퍼"""
@@ -352,7 +356,7 @@ def build_gui_layout():  # 전체 UI 레이아웃 구축 (좌/우 패널, 콘솔
     rebuild_left_service_cards()
 
     # [우측 패널]
-    right_panel = tk.Frame(paned, bg="#0c0c0c")
+    right_panel = tk.Frame(paned, bg="#181818")
     paned.add(right_panel, minsize=400)
 
     header_canvas = tk.Canvas(right_panel, bg="#181818", height=HEADER_HEIGHT, highlightthickness=0, bd=0)
@@ -387,7 +391,8 @@ def build_gui_layout():  # 전체 UI 레이아웃 구축 (좌/우 패널, 콘솔
         scrollbar = ttk.Scrollbar(f_container, orient="vertical", command=txt_widget.yview)
         txt_widget.configure(yscrollcommand=scrollbar.set)
         console_text_widgets[sid] = txt_widget
-        console_scrollbars[sid] = f_container
+        console_frames[sid] = f_container
+        console_scrollbars[sid] = scrollbar
 
     frame_right_settings = tk.Frame(right_body, bg="#1e1e1e")
     mk_btn(frame_right_settings, "+ 새 커스텀 서비스 추가", "#2e7d32", "#ffffff",
@@ -510,7 +515,8 @@ def remove_service_ui(service_id):  # 서비스 삭제
         show_right_view("settings")
 
 def rebuild_gui():  # UI 재구축
-    console_text_widgets.clear(); console_scrollbars.clear(); console_tab_buttons.clear(); main_tab_buttons.clear()
+    console_text_widgets.clear(); console_frames.clear(); console_scrollbars.clear()
+    console_tab_buttons.clear(); main_tab_buttons.clear()
     for w in root.winfo_children():
         w.destroy()
     build_gui_layout()
